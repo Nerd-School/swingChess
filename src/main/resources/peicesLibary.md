@@ -1,0 +1,12 @@
+whitePawn = 1
+whiteKnight = 2
+whiteBishop = 3
+whiteRook = 4
+whiteQueen = 5
+whiteKing = 0
+blackPawn = 6
+blackKnight = 7
+blackBishop = 8
+blackRook = 9
+blackQueen = 10
+blackKing = 11
