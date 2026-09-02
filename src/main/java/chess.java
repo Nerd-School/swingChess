@@ -1,26 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
 import java.util.Scanner;
-//
-//public enum piece {
-//    Pawn(1),
-//    Knight(2),
-//    Bishop(3),
-//    Rook(4),
-//    Queen(5),
-//    King(6);
-//
-//    private final int type;
-//
-//    private piece(int type) {
-//        this.type = type;
-//    }
-//
-//    public int getType() {
-//        return this.type;
-//    }
-//
-//}
 
 
 public class chess {
@@ -88,7 +68,29 @@ public class chess {
         System.out.println("What piece would you like to move? ");
         String movingPiece = game.scanner.next();
 
-        System.exit(1);
+        int[] validTestBoth = game.convertToNumber(movingPiece);
+        int validTestRow = validTestBoth[0];
+        int validTestColumn = validTestBoth[1];
+        try {
+            if (game.board[validTestRow][validTestColumn] == 0 || game.board[validTestRow][validTestColumn] > 12) {
+                System.out.println("Invalid location! Try again!");
+                movingPiece = game.scanner.next();
+            }
+        } catch (Exception e) {
+            System.out.println("Invalid location! Try again!");
+            movingPiece = game.scanner.next();
+        }
+
+//        System.out.println("Where would you like to move that piece? ");
+//        String moveLocation = game.scanner.next();
+
+        if (game.isMoveLegal(movingPiece, "a1"))
+            System.exit(1);
+        else {
+            System.out.println("Invalid move! Try again");
+        }
+
+        System.exit(0);
     }
 
     public void printBoard() {
@@ -170,12 +172,38 @@ public class chess {
         column = position.charAt(0) - 'a';
         row = Character.getNumericValue(position.charAt(1));
 
+        row = 8-row;
+
         int[] pos = {row, column};
 
         return pos;
 
     }
 
-
-
+    public boolean isMoveLegal(String start, String end) {
+        int[] startLocation = convertToNumber(start);
+        int pieceType;
+        try {
+            pieceType = board[startLocation[0]][startLocation[1]];
+        } catch(Exception e) {
+            return false;
+        }
+        if (pieceType == 1 || pieceType == 6) {
+            System.out.println("It's a pawn!!");
+        } else if (pieceType == 2 || pieceType == 7) {
+            System.out.println("It's a knight");
+        } else if (pieceType == 3 || pieceType == 8) {
+            System.out.println("It's a bishop");
+        } else if (pieceType ==4 || pieceType == 9) {
+            System.out.println("It's a Rook");
+        } else if (pieceType == 5 || pieceType == 10) {
+            System.out.println("It's a queen");
+        } else if (pieceType == 11 || pieceType == 12) {
+            System.out.println("It's a King");
+        } else {
+            System.out.println("Invalid");
+            return(false);
+        }
+        return true;
+    }
 }
