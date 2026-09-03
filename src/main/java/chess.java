@@ -7,6 +7,9 @@ public class chess {
 
     Scanner scanner = new Scanner(System.in);
 
+    // true means white turn false means blacks turn
+    boolean whiteTurn = true;
+
     final int whitePawn = 1;
     final int whiteKnight = 2;
     final int whiteBishop = 3;
@@ -63,7 +66,12 @@ public class chess {
         chess game = new chess();
 
         game.resetBoard();
+
+        game.board[5][4] = 1;
+
         game.printBoard();
+
+//        IO.println(game.board[5][4]);
 
         game.movePiece();
 
@@ -158,39 +166,83 @@ public class chess {
     }
 
     public void movePiece() {
-        System.out.println("What piece would you like to move? ");
-        String movingPiece = scanner.next();
+        boolean parentSuccess = false;
+        do {
+            System.out.println("What piece would you like to move? ");
+            String movingPiece = scanner.next();
 
-        int[] validTestBoth = convertToNumber(movingPiece);
-        int validTestRow = validTestBoth[0];
-        int validTestColumn = validTestBoth[1];
+            boolean success = false;
 
-        boolean success = false;
-        // checks once and more times if needed
-         do {
-             // try checks if the position is inside the bounds of the board
-             try {
-                 // if checks the content of the position (0 is blank and above 12 is invalid)
-                 if (board[validTestRow][validTestColumn] == 0 || board[validTestRow][validTestColumn] > 12) {
-                     System.out.println("Invalid location! Try again!");
-                     movingPiece = scanner.next();
-                 }
-             // the try failed so the location is outside the bounds of the board
-             } catch (Exception e) {
-                 System.out.println("Invalid location! Try again!");
-                 movingPiece = scanner.next();
-             }
-             // lastly checks if the move is legal before exiting the do while loop
-             if (isMoveLegal(movingPiece, "a1")) {
-                 success = true;
-             }
-         } while (!success);
+            do {
+                if (movingPiece.length() == 2) {
+                    success = true;
+                }
+            } while (!success);
 
+            int[] validTestBoth = convertToNumber(movingPiece);
+            int validTestRow = validTestBoth[0];
+            int validTestColumn = validTestBoth[1];
 
+            int pieceType;
 
-        System.out.println("Where would you like to move that piece? ");
-        String moveLocation = scanner.next();
+            success = false;
+            // checks once and more times if needed
+            do {
+                // try checks if the position is inside the bounds of the board
+                try {
+                    // if checks the content of the position (0 is blank and above 12 is invalid)
+                    if (board[validTestRow][validTestColumn] == 0 || board[validTestRow][validTestColumn] > 12) {
+                        System.out.println("Invalid location! Try again!");
+                        movingPiece = scanner.next();
+                    }
+                    // the try failed so the location is outside the bounds of the board
+                } catch (Exception e) {
+                    System.out.println("Invalid location! Try again!");
+                    movingPiece = scanner.next();
+                }
+                // lastly checks if the move is legal before exiting the do while loop
+                if (isMoveLegal(movingPiece, "a1")) {
+                    success = true;
+                }
+            } while (!success);
 
+            pieceType = board[validTestRow][validTestColumn];
+
+            System.out.println("Where would you like to move that piece? ");
+            String moveToLocation = scanner.next();
+            int[] moveToLocationArray = convertToNumber(moveToLocation);
+            int moveToLocationRow = moveToLocationArray[0];
+            int moveToLocationColumn = moveToLocationArray[1];
+
+            success = false;
+
+            do {
+                if (moveToLocation.length() == 2) {
+                    if (board[moveToLocationRow][moveToLocationColumn] == 0) {
+                        success = true;
+                    } else {
+                        System.out.println("This location is taken! Try again!");
+                    }
+                } else {
+                    System.out.println("Invalid location! Try again!");
+                }
+            } while (!success);
+
+            // moves pawn forward 1 space
+            if (pieceType == 1 && validTestRow - 1 == moveToLocationRow || pieceType == 6 && validTestRow + 1 == moveToLocationRow) {
+                board[moveToLocationRow][moveToLocationColumn] = board[validTestRow][validTestColumn];
+                board[validTestRow][validTestColumn] = 0;
+                parentSuccess = true;
+            } else if (pieceType == 1 && validTestRow - 2 == moveToLocationRow && board[validTestRow - 1][validTestColumn] == 0) {
+                board[moveToLocationRow][moveToLocationColumn] = board[validTestRow][validTestColumn];
+                board[validTestRow][validTestColumn] = 0;
+                parentSuccess = true;
+            }
+            else {
+                System.out.println("Invalid move! Please try again!");
+            }
+            printBoard();
+        } while (!parentSuccess);
     }
 
     public boolean isMoveLegal(String start, String end) {
