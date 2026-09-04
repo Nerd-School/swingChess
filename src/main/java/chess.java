@@ -69,9 +69,6 @@ public class chess {
         chess game = new chess();
 
         game.resetBoard();
-
-        game.board[5][3] = 4;
-
         game.printBoard();
 
         game.movePiece();
@@ -232,15 +229,16 @@ public class chess {
 
             do {
                 if (moveToLocation.length() == 2) {
-                    if (board[moveToLocationRow][moveToLocationColumn] == 0) {
-                        success = true;
-                    } else {
-                        System.out.println("This location is taken! Try again!");
-                        moveToLocation = scanner.next();
-                        moveToLocationArray = convertToNumber(moveToLocation);
-                        moveToLocationRow = moveToLocationArray[0];
-                        moveToLocationColumn = moveToLocationArray[1];
-                    }
+                    //if (board[moveToLocationRow][moveToLocationColumn] == 0) {
+                    success = true;
+                    //}
+//                    else {
+//                        System.out.println("This location is taken! Try again!");
+//                        moveToLocation = scanner.next();
+//                        moveToLocationArray = convertToNumber(moveToLocation);
+//                        moveToLocationRow = moveToLocationArray[0];
+//                        moveToLocationColumn = moveToLocationArray[1];
+//                    }
                 } else {
                     System.out.println("Invalid location! Try again!");
                 }
@@ -276,27 +274,67 @@ public class chess {
         }
 
         // tells me what piece type (will be changed to more important stuff later)
-        if (pieceType == 1) {
-            if (startLocation[0] -1 == endLocation[0]) {
-                return true;
-            } else if (startLocation[0] - 2 == endLocation[0] &&  startLocation[0] == 6) {
-                return true;
-            } else {
-                return false;
-            }
-        } else if (pieceType == 6) {
-            if (startLocation[0] -1 == endLocation[0]) {
-                return true;
-            } else if (startLocation[0] + 2 == endLocation[0] &&  startLocation[0] == 1) {
+        if (pieceType == whitePawn) {
+            if (endPieceType == 0 && startLocation[1] == endLocation[1]) {
+                if (startLocation[0] - 1 == endLocation[0]) {
+                    return true;
+                } else if (startLocation[0] - 2 == endLocation[0] && startLocation[0] == 6) {
+                    return true;
+                } else {
+                    return false;
+                }
+            } else if (startLocation[0] - 1 == endLocation[0] && Math.abs(startLocation[1] - endLocation[1]) == 1) {
                 return true;
             } else {
                 return false;
             }
-        } else if (pieceType == 2 || pieceType == 7) {
-            System.out.println("It's a knight");
-        } else if (pieceType == 3 || pieceType == 8) {
-            System.out.println("It's a bishop");
-        } else if (pieceType ==4 || pieceType == 9) {
+        } else if (pieceType == blackPawn) {
+            if (endPieceType == 0 && startLocation[1] == endLocation[1]) {
+                if (startLocation[0] + 1 == endLocation[0]) {
+                    return true;
+                } else if (startLocation[0] + 2 == endLocation[0] && startLocation[0] == 1) {
+                    return true;
+                } else {
+                    return false;
+                }
+            } else if (startLocation[0] + 1 == endLocation[0] && Math.abs(startLocation[1] - endLocation[1]) == 1) {
+                return true;
+            } else {
+                return false;
+            }
+        } else if (pieceType == whiteKnight || pieceType == blackKnight) {
+            // knight logic
+            if (Math.abs(startLocation[0] - endLocation[0]) == 1 && Math.abs(startLocation[1] - endLocation[1]) == 2 || Math.abs(startLocation[0] - endLocation[0]) == 2 && Math.abs(startLocation[1] - endLocation[1]) == 1) {
+                return true;
+            } else {
+                return false;
+            }
+        } else if (pieceType == whiteBishop || pieceType == blackBishop) {
+            int rowMultiplier;
+            int columnMultiplier;
+
+            if (Math.abs(startLocation[0] - endLocation[0]) != Math.abs(startLocation[1] - endLocation[1])) {
+                return false;
+            }
+
+            if (startLocation[0] < endLocation[0]) {
+                rowMultiplier = 1;
+            } else {
+                rowMultiplier = -1;
+            }
+
+            if (startLocation[1] < endLocation[1]) {
+                columnMultiplier = 1;
+            } else {
+                columnMultiplier = -1;
+            }
+
+            for (int i = 1; i < Math.abs(startLocation[0] - endLocation[0]); i++) {
+                if ((board[startLocation[0] + (i*rowMultiplier)][startLocation[1]+(i*columnMultiplier)] != 0)) {
+                    return false;
+                }
+            }
+        } else if (pieceType == whiteRook || pieceType == blackRook) {
             // rook logic
             if (startLocation[0] == endLocation[0]) {
                 // the rook is moving horizontally staying on the same row
@@ -336,9 +374,9 @@ public class chess {
                 // the rook can only move straight up or down so if the starting and ending row or column doesn't match it isn't moving straight
                 return false;
             }
-        } else if (pieceType == 5 || pieceType == 10) {
+        } else if (pieceType == whiteQueen || pieceType == blackQueen) {
             System.out.println("It's a queen");
-        } else if (pieceType == 11 || pieceType == 12) {
+        } else if (pieceType == blackKing || pieceType == whiteKing) {
             System.out.println("It's a King");
         } else {
             // there is no piece here that is in the library of pieces
