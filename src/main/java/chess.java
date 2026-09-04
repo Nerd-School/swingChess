@@ -10,6 +10,9 @@ public class chess {
     // true means white turn false means blacks turn
     boolean whiteTurn = true;
 
+    boolean whiteKingInCheck = false;
+    boolean blackKingInCheck = false;
+
     final int whitePawn = 1;
     final int whiteKnight = 2;
     final int whiteBishop = 3;
@@ -37,7 +40,7 @@ public class chess {
 
 
 
-    public static void main(String[] args) {
+    static void main(String[] args) {
         JFrame frame = new JFrame();
 
 
@@ -67,11 +70,9 @@ public class chess {
 
         game.resetBoard();
 
-        game.board[5][4] = 1;
+        game.board[5][3] = 4;
 
         game.printBoard();
-
-//        IO.println(game.board[5][4]);
 
         game.movePiece();
 
@@ -179,31 +180,44 @@ public class chess {
                 }
             } while (!success);
 
-            int[] validTestBoth = convertToNumber(movingPiece);
-            int validTestRow = validTestBoth[0];
-            int validTestColumn = validTestBoth[1];
+            int[] validTestBoth = {0,0};
+            int validTestRow = 0;
+            int validTestColumn = 0;
 
-            int pieceType;
+            int pieceType = 0;
 
             success = false;
             // checks once and more times if needed
             do {
+                validTestBoth = convertToNumber(movingPiece);
+                validTestRow = validTestBoth[0];
+                validTestColumn = validTestBoth[1];
                 // try checks if the position is inside the bounds of the board
                 try {
                     // if checks the content of the position (0 is blank and above 12 is invalid)
                     if (board[validTestRow][validTestColumn] == 0 || board[validTestRow][validTestColumn] > 12) {
                         System.out.println("Invalid location! Try again!");
                         movingPiece = scanner.next();
+                    } else {
+                        pieceType = board[validTestRow][validTestColumn];
                     }
                     // the try failed so the location is outside the bounds of the board
                 } catch (Exception e) {
                     System.out.println("Invalid location! Try again!");
                     movingPiece = scanner.next();
                 }
-                // lastly checks if the move is legal before exiting the do while loop
-                if (isMoveLegal(movingPiece, "a1")) {
-                    success = true;
+                success = true;
+                if (!whiteTurn && pieceType > 0 && pieceType < 6 || !whiteTurn && pieceType == 12) {
+                    System.out.println("It is black's move. Please enter the location of a black piece");
+                    success = false;
+                    movingPiece = scanner.next();
+                } else if (whiteTurn && pieceType > 5 && pieceType < 12) {
+                    System.out.println("It is white's move. Please enter the location of a white piece");
+                    success = false;
+                    movingPiece = scanner.next();
+
                 }
+
             } while (!success);
 
             pieceType = board[validTestRow][validTestColumn];
@@ -222,46 +236,106 @@ public class chess {
                         success = true;
                     } else {
                         System.out.println("This location is taken! Try again!");
+                        moveToLocation = scanner.next();
+                        moveToLocationArray = convertToNumber(moveToLocation);
+                        moveToLocationRow = moveToLocationArray[0];
+                        moveToLocationColumn = moveToLocationArray[1];
                     }
                 } else {
                     System.out.println("Invalid location! Try again!");
                 }
             } while (!success);
 
-            // moves pawn forward 1 space
-            if (pieceType == 1 && validTestRow - 1 == moveToLocationRow || pieceType == 6 && validTestRow + 1 == moveToLocationRow) {
+
+            if (isMoveLegal(movingPiece, moveToLocation)) {
                 board[moveToLocationRow][moveToLocationColumn] = board[validTestRow][validTestColumn];
                 board[validTestRow][validTestColumn] = 0;
-                parentSuccess = true;
-            } else if (pieceType == 1 && validTestRow - 2 == moveToLocationRow && board[validTestRow - 1][validTestColumn] == 0) {
-                board[moveToLocationRow][moveToLocationColumn] = board[validTestRow][validTestColumn];
-                board[validTestRow][validTestColumn] = 0;
-                parentSuccess = true;
+                whiteTurn = !whiteTurn;
+            } else {
+                System.out.println("Illegal move! Try again!");
             }
-            else {
-                System.out.println("Invalid move! Please try again!");
-            }
+
             printBoard();
         } while (!parentSuccess);
     }
 
     public boolean isMoveLegal(String start, String end) {
         int[] startLocation = convertToNumber(start);
+        int[] endLocation = convertToNumber(end);
         int pieceType;
+        int endPieceType;
         try {
             pieceType = board[startLocation[0]][startLocation[1]];
+            endPieceType = board[endLocation[0]][endLocation[1]];
         } catch(Exception e) {
             return false;
         }
+        // checks if you are capturing your own piece
+        if (whiteTurn && endPieceType > 0 && endPieceType < 6 && endPieceType != 12 || !whiteTurn && endPieceType > 5 && endPieceType < 12) {
+            return false;
+        }
+
         // tells me what piece type (will be changed to more important stuff later)
-        if (pieceType == 1 || pieceType == 6) {
-            System.out.println("It's a pawn!!");
+        if (pieceType == 1) {
+            if (startLocation[0] -1 == endLocation[0]) {
+                return true;
+            } else if (startLocation[0] - 2 == endLocation[0] &&  startLocation[0] == 6) {
+                return true;
+            } else {
+                return false;
+            }
+        } else if (pieceType == 6) {
+            if (startLocation[0] -1 == endLocation[0]) {
+                return true;
+            } else if (startLocation[0] + 2 == endLocation[0] &&  startLocation[0] == 1) {
+                return true;
+            } else {
+                return false;
+            }
         } else if (pieceType == 2 || pieceType == 7) {
             System.out.println("It's a knight");
         } else if (pieceType == 3 || pieceType == 8) {
             System.out.println("It's a bishop");
         } else if (pieceType ==4 || pieceType == 9) {
-            System.out.println("It's a Rook");
+            // rook logic
+            if (startLocation[0] == endLocation[0]) {
+                // the rook is moving horizontally staying on the same row
+
+                // rook moving positive (to the right)
+                if (startLocation[1] < endLocation[1]) {
+                    for (int i = startLocation[1]+1;  i < endLocation[1]; i++) {
+                        if (board[startLocation[0]][i] != 0) {
+                            return false;
+                        }
+                    }
+                } else if (startLocation[1] > endLocation[1]) {
+                    for (int i = startLocation[1]-1; i > endLocation[1]; i--) {
+                        if (board[startLocation[0]][i] != 0) {
+                            return false;
+                        }
+                    }
+                }
+            } else if ( startLocation[1] == endLocation[1]) {
+                // the rook is moving vertically staying on the same column
+
+                // moving upward (toward the black side)
+                if (startLocation[0] < endLocation[0]) {
+                    for (int i = startLocation[0]+1;  i < endLocation[0]; i++) {
+                        if (board[i][startLocation[1]] != 0) {
+                            return false;
+                        }
+                    }
+                } else if (startLocation[0] > endLocation[0]) {
+                    for (int i = startLocation[0]-1;  i > endLocation[0]; i--) {
+                        if (board[i][startLocation[1]] != 0) {
+                            return false;
+                        }
+                    }
+                }
+            } else {
+                // the rook can only move straight up or down so if the starting and ending row or column doesn't match it isn't moving straight
+                return false;
+            }
         } else if (pieceType == 5 || pieceType == 10) {
             System.out.println("It's a queen");
         } else if (pieceType == 11 || pieceType == 12) {
