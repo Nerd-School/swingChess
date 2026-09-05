@@ -163,6 +163,8 @@ public class chess {
 
     }
 
+
+
     public void movePiece() {
         boolean parentSuccess = false;
         do {
@@ -274,7 +276,26 @@ public class chess {
         }
 
         // tells me what piece type (will be changed to more important stuff later)
-        if (pieceType == whitePawn) {
+        if (pieceType == whitePawn || pieceType == blackPawn) {
+            return(pawnMoveLegal(startLocation, endLocation, pieceType, endPieceType));
+        } else if (pieceType == whiteKnight || pieceType == blackKnight) {
+            return(knightMoveLegal(startLocation, endLocation));
+        } else if (pieceType == whiteBishop || pieceType == blackBishop) {
+            return(bishopMoveLegal(startLocation, endLocation));
+        } else if (pieceType == whiteRook || pieceType == blackRook) {
+            return(rookMoveLegal(startLocation, endLocation));
+        } else if (pieceType == whiteQueen || pieceType == blackQueen) {
+            return rookMoveLegal(startLocation, endLocation) || bishopMoveLegal(startLocation, endLocation);
+        } else if (pieceType == blackKing || pieceType == whiteKing) {
+            return kingMoveLegal(startLocation, endLocation);
+        } else {
+            // there is no piece here that is in the library of pieces
+            return(false);
+        }
+    }
+
+    private boolean pawnMoveLegal(int[] startLocation, int[] endLocation, int pawnType, int endPieceType) {
+        if (pawnType == whitePawn) {
             if (endPieceType == 0 && startLocation[1] == endLocation[1]) {
                 if (startLocation[0] - 1 == endLocation[0]) {
                     return true;
@@ -288,7 +309,7 @@ public class chess {
             } else {
                 return false;
             }
-        } else if (pieceType == blackPawn) {
+        } else if (pawnType == blackPawn) {
             if (endPieceType == 0 && startLocation[1] == endLocation[1]) {
                 if (startLocation[0] + 1 == endLocation[0]) {
                     return true;
@@ -302,86 +323,92 @@ public class chess {
             } else {
                 return false;
             }
-        } else if (pieceType == whiteKnight || pieceType == blackKnight) {
-            // knight logic
-            if (Math.abs(startLocation[0] - endLocation[0]) == 1 && Math.abs(startLocation[1] - endLocation[1]) == 2 || Math.abs(startLocation[0] - endLocation[0]) == 2 && Math.abs(startLocation[1] - endLocation[1]) == 1) {
-                return true;
-            } else {
-                return false;
-            }
-        } else if (pieceType == whiteBishop || pieceType == blackBishop) {
-            int rowMultiplier;
-            int columnMultiplier;
-
-            if (Math.abs(startLocation[0] - endLocation[0]) != Math.abs(startLocation[1] - endLocation[1])) {
-                return false;
-            }
-
-            if (startLocation[0] < endLocation[0]) {
-                rowMultiplier = 1;
-            } else {
-                rowMultiplier = -1;
-            }
-
-            if (startLocation[1] < endLocation[1]) {
-                columnMultiplier = 1;
-            } else {
-                columnMultiplier = -1;
-            }
-
-            for (int i = 1; i < Math.abs(startLocation[0] - endLocation[0]); i++) {
-                if ((board[startLocation[0] + (i*rowMultiplier)][startLocation[1]+(i*columnMultiplier)] != 0)) {
-                    return false;
-                }
-            }
-        } else if (pieceType == whiteRook || pieceType == blackRook) {
-            // rook logic
-            if (startLocation[0] == endLocation[0]) {
-                // the rook is moving horizontally staying on the same row
-
-                // rook moving positive (to the right)
-                if (startLocation[1] < endLocation[1]) {
-                    for (int i = startLocation[1]+1;  i < endLocation[1]; i++) {
-                        if (board[startLocation[0]][i] != 0) {
-                            return false;
-                        }
-                    }
-                } else if (startLocation[1] > endLocation[1]) {
-                    for (int i = startLocation[1]-1; i > endLocation[1]; i--) {
-                        if (board[startLocation[0]][i] != 0) {
-                            return false;
-                        }
-                    }
-                }
-            } else if ( startLocation[1] == endLocation[1]) {
-                // the rook is moving vertically staying on the same column
-
-                // moving upward (toward the black side)
-                if (startLocation[0] < endLocation[0]) {
-                    for (int i = startLocation[0]+1;  i < endLocation[0]; i++) {
-                        if (board[i][startLocation[1]] != 0) {
-                            return false;
-                        }
-                    }
-                } else if (startLocation[0] > endLocation[0]) {
-                    for (int i = startLocation[0]-1;  i > endLocation[0]; i--) {
-                        if (board[i][startLocation[1]] != 0) {
-                            return false;
-                        }
-                    }
-                }
-            } else {
-                // the rook can only move straight up or down so if the starting and ending row or column doesn't match it isn't moving straight
-                return false;
-            }
-        } else if (pieceType == whiteQueen || pieceType == blackQueen) {
-            System.out.println("It's a queen");
-        } else if (pieceType == blackKing || pieceType == whiteKing) {
-            System.out.println("It's a King");
         } else {
-            // there is no piece here that is in the library of pieces
-            return(false);
+            return false;
+        }
+    }
+
+    private boolean knightMoveLegal(int[] startLocation, int[] endLocation) {
+        // knight logic
+        if (Math.abs(startLocation[0] - endLocation[0]) == 1 && Math.abs(startLocation[1] - endLocation[1]) == 2 || Math.abs(startLocation[0] - endLocation[0]) == 2 && Math.abs(startLocation[1] - endLocation[1]) == 1) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private boolean bishopMoveLegal(int[] startLocation, int[] endLocation) {
+        int rowMultiplier;
+        int columnMultiplier;
+
+        if (Math.abs(startLocation[0] - endLocation[0]) != Math.abs(startLocation[1] - endLocation[1])) {
+            return false;
+        }
+
+        if (startLocation[0] < endLocation[0]) {
+            rowMultiplier = 1;
+        } else {
+            rowMultiplier = -1;
+        }
+
+        if (startLocation[1] < endLocation[1]) {
+            columnMultiplier = 1;
+        } else {
+            columnMultiplier = -1;
+        }
+
+        for (int i = 1; i < Math.abs(startLocation[0] - endLocation[0]); i++) {
+            if ((board[startLocation[0] + (i*rowMultiplier)][startLocation[1]+(i*columnMultiplier)] != 0)) {
+                return false;
+            }
         }
         return true;
+    }
+
+    private boolean rookMoveLegal(int[] startLocation, int[] endLocation) {
+        // rook logic
+        if (startLocation[0] == endLocation[0]) {
+            // the rook is moving horizontally staying on the same row
+
+            // rook moving positive (to the right)
+            if (startLocation[1] < endLocation[1]) {
+                for (int i = startLocation[1]+1;  i < endLocation[1]; i++) {
+                    if (board[startLocation[0]][i] != 0) {
+                        return false;
+                    }
+                }
+            } else if (startLocation[1] > endLocation[1]) {
+                for (int i = startLocation[1]-1; i > endLocation[1]; i--) {
+                    if (board[startLocation[0]][i] != 0) {
+                        return false;
+                    }
+                }
+            }
+        } else if ( startLocation[1] == endLocation[1]) {
+            // the rook is moving vertically staying on the same column
+
+            // moving upward (toward the black side)
+            if (startLocation[0] < endLocation[0]) {
+                for (int i = startLocation[0]+1;  i < endLocation[0]; i++) {
+                    if (board[i][startLocation[1]] != 0) {
+                        return false;
+                    }
+                }
+            } else if (startLocation[0] > endLocation[0]) {
+                for (int i = startLocation[0]-1;  i > endLocation[0]; i--) {
+                    if (board[i][startLocation[1]] != 0) {
+                        return false;
+                    }
+                }
+            }
+        } else {
+            // the rook can only move straight up or down so if the starting and ending row or column doesn't match it isn't moving straight
+            return false;
+        }
+        return true;
+    }
+
+    private boolean kingMoveLegal(int[] startLocation, int[] endLocation) {
+        return(Math.abs(startLocation[0] - endLocation[0]) <= 1 && Math.abs(startLocation[1] - endLocation[1]) <= 1);
     }
 }
