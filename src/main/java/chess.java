@@ -1,6 +1,8 @@
 import javax.swing.*;
 import java.awt.*;
+import java.util.HashMap;
 import java.util.Scanner;
+
 
 
 public class chess {
@@ -12,6 +14,9 @@ public class chess {
 
     boolean whiteKingInCheck = false;
     boolean blackKingInCheck = false;
+
+    String whiteKingPosition = "e1";
+    String blackKingPosition = "e8";
 
     final int whitePawn = 1;
     final int whiteKnight = 2;
@@ -26,6 +31,8 @@ public class chess {
     final int blackQueen = 10;
     final int blackKing = 11;
 
+    HashMap<Integer, String> numberConversionMap =  new HashMap<>();
+
     final static int ROW_COUNT = 8;
     final static int COLUMN_COUNT = 8;
 
@@ -35,40 +42,35 @@ public class chess {
     public final String ANSI_Red = "\u001B[31m";
     public final String ANSI_Green = "\u001B[32m";
 
-    // 8 rows by 8 columns
+    JFrame frame = new JFrame();
 
-
-
+    Rectangle size;
 
     static void main(String[] args) {
-        JFrame frame = new JFrame();
-
-
-
-        frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
-
-
-
-        frame.setLayout(null);
-
-//        frame.setVisible(true);
-
-        Rectangle size = frame.getBounds();
-
-        System.out.println("Width " + size.width);
-        System.out.println("Height " + size.height);
-
-        int spaceSize;
-        if (size.width<size.height) {
-            spaceSize = (size.width/8);
-        } else {
-            spaceSize = (size.height/8);
-            System.out.println(spaceSize);
-        }
 
         chess game = new chess();
 
+        game.frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+
+        game.frame.setLayout(new BorderLayout());
+
+//        game.frame.setVisible(true);
+
+        game.frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        game.setupScreen();
+
+        game.numberConversionMap.put(0, "a");
+        game.numberConversionMap.put(1, "b");
+        game.numberConversionMap.put(2, "c");
+        game.numberConversionMap.put(3, "d");
+        game.numberConversionMap.put(4, "e");
+        game.numberConversionMap.put(5, "f");
+        game.numberConversionMap.put(6, "g");
+        game.numberConversionMap.put(7, "h");
+
         game.resetBoard();
+
         game.printBoard();
 
         game.movePiece();
@@ -163,7 +165,14 @@ public class chess {
 
     }
 
+    public String convertToString(int[] pos) {
+        String row;
+        String column;
 
+        row = (pos[0] + 1) + "";
+        column = numberConversionMap.get(pos[1]);
+        return column + row;
+    }
 
     public void movePiece() {
         boolean parentSuccess = false;
@@ -231,25 +240,25 @@ public class chess {
 
             do {
                 if (moveToLocation.length() == 2) {
-                    //if (board[moveToLocationRow][moveToLocationColumn] == 0) {
                     success = true;
-                    //}
-//                    else {
-//                        System.out.println("This location is taken! Try again!");
-//                        moveToLocation = scanner.next();
-//                        moveToLocationArray = convertToNumber(moveToLocation);
-//                        moveToLocationRow = moveToLocationArray[0];
-//                        moveToLocationColumn = moveToLocationArray[1];
-//                    }
                 } else {
                     System.out.println("Invalid location! Try again!");
                 }
             } while (!success);
 
-
-            if (isMoveLegal(movingPiece, moveToLocation)) {
+            if (isMoveLegal(movingPiece, moveToLocation, true)) {
+                if (board[validTestRow][validTestColumn] == 12) {
+                    whiteKingPosition = convertToString(moveToLocationArray);
+                } else if (board[validTestRow][validTestColumn] == 11) {
+                    blackKingPosition = convertToString(moveToLocationArray);
+                }
                 board[moveToLocationRow][moveToLocationColumn] = board[validTestRow][validTestColumn];
                 board[validTestRow][validTestColumn] = 0;
+                System.out.println("Checking for promotion\nPiece type: " + pieceType + " test row " + validTestRow);
+                if (pieceType == 1 && moveToLocationRow == 0 || pieceType == 6 && moveToLocationRow == 7) {
+                    System.out.println("Promote Pawn");
+                    promotePawn(validTestBoth);
+                }
                 whiteTurn = !whiteTurn;
             } else {
                 System.out.println("Illegal move! Try again!");
@@ -259,7 +268,7 @@ public class chess {
         } while (!parentSuccess);
     }
 
-    public boolean isMoveLegal(String start, String end) {
+    public boolean isMoveLegal(String start, String end, boolean checkIfKingInCheck) {
         int[] startLocation = convertToNumber(start);
         int[] endLocation = convertToNumber(end);
         int pieceType;
@@ -274,6 +283,22 @@ public class chess {
         if (whiteTurn && endPieceType > 0 && endPieceType < 6 && endPieceType != 12 || !whiteTurn && endPieceType > 5 && endPieceType < 12) {
             return false;
         }
+
+        // temporally moves the piece to check if the king is in check
+
+        if (checkIfKingInCheck) {
+            board[endLocation[0]][endLocation[1]] = pieceType;
+            board[startLocation[0]][startLocation[1]] = 0;
+            if (whiteTurn && whiteKingInCheck() || !whiteTurn && blackKingInCheck()) {
+                board[startLocation[0]][startLocation[1]] = pieceType;
+                board[endLocation[0]][endLocation[1]] = endPieceType;
+                System.out.println("The king is in check");
+                return false;
+            }
+            board[startLocation[0]][startLocation[1]] = pieceType;
+            board[endLocation[0]][endLocation[1]] = endPieceType;
+        }
+
 
         // tells me what piece type (will be changed to more important stuff later)
         if (pieceType == whitePawn || pieceType == blackPawn) {
@@ -411,4 +436,104 @@ public class chess {
     private boolean kingMoveLegal(int[] startLocation, int[] endLocation) {
         return(Math.abs(startLocation[0] - endLocation[0]) <= 1 && Math.abs(startLocation[1] - endLocation[1]) <= 1);
     }
+
+    private boolean whiteKingInCheck() {
+        int[] testPos;
+        for (int i = 1; i < 8; i++) {
+            for (int j = 1; j < 8; j++) {
+                testPos = new int[]{i,j};
+                String stringTestPos = convertToString(testPos);
+                if (board[i][j] > 5 && board[i][j] < 12) {
+                    if (isMoveLegal(stringTestPos, whiteKingPosition, false)) {
+                        System.out.println("The white king is in check");
+                        whiteKingInCheck = true;
+                        return true;
+                    }
+                }
+            }
+        }
+        whiteKingInCheck = false;
+        return false;
+    }
+
+    private boolean blackKingInCheck() {
+        int[] testPos;
+        for (int i = 1; i < 8; i++) {
+            for (int j = 1; j < 8; j++) {
+                testPos = new int[]{i,j};
+                String stringTestPos = convertToString(testPos);
+                if (board[i][j] < 6 && board[i][j] > 0 || board[i][j] == 12) {
+                    if (isMoveLegal(stringTestPos, whiteKingPosition, false)) {
+                        blackKingInCheck = true;
+                        return true;
+                    }
+
+                }
+            }
+        }
+        blackKingInCheck = false;
+        return false;
+    }
+
+    private void setupScreen() {
+        size = frame.getBounds();
+
+        System.out.println("Width " + size.width);
+        System.out.println("Height " + size.height);
+
+        int spaceSize;
+        if (size.width<size.height) {
+            spaceSize = (size.width/8);
+
+        } else {
+            spaceSize = (size.height/8);
+        }
+        System.out.println(spaceSize);
+        JLabel title = new JLabel("Chess");
+
+        frame.add(title, BorderLayout.NORTH);
+
+    }
+
+    private void promotePawn(int[] promotionSquare) {
+        boolean success = false;
+        do {
+            System.out.println("What piece would you like to become? (Q for queen; R for rook; K for knight; B for bishop)");
+            char promotionPieceType = scanner.next().charAt(0);
+
+            if (whiteTurn) {
+                if (promotionPieceType == 'Q' || promotionPieceType == 'q') {
+                    board[0][promotionSquare[1]] = whiteQueen;
+                    success = true;
+                } else if (promotionPieceType == 'R' || promotionPieceType == 'r') {
+                    board[0][promotionSquare[1]] = whiteRook;
+                    success = true;
+                } else if (promotionPieceType == 'K' || promotionPieceType == 'k') {
+                    board[0][promotionSquare[1]] = whiteKnight;
+                    success = true;
+                } else if (promotionPieceType == 'B' || promotionPieceType == 'b') {
+                    board[0][promotionSquare[1]] = whiteBishop;
+                    success = true;
+                } else {
+                    System.out.println("Invalid promotion piece type! Please enter a valid promotion piece type.");
+                }
+            } else {
+                if (promotionPieceType == 'Q' || promotionPieceType == 'q') {
+                    board[7][promotionSquare[1]] = blackQueen;
+                    success = true;
+                } else if (promotionPieceType == 'R' || promotionPieceType == 'r') {
+                    board[7][promotionSquare[1]] = blackRook;
+                    success = true;
+                } else if (promotionPieceType == 'K' || promotionPieceType == 'k') {
+                    board[7][promotionSquare[1]] = blackKnight;
+                    success = true;
+                } else if (promotionPieceType == 'B' || promotionPieceType == 'b') {
+                    board[7][promotionSquare[1]] = blackBishop;
+                    success = true;
+                }
+            }
+        } while (!success);
+    }
+
 }
+
