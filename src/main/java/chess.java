@@ -3,8 +3,6 @@ import java.awt.*;
 import java.util.HashMap;
 import java.util.Scanner;
 
-
-
 public class chess {
 
     Scanner scanner = new Scanner(System.in);
@@ -169,7 +167,7 @@ public class chess {
         String row;
         String column;
 
-        row = (pos[0] + 1) + "";
+        row = (8-pos[0]) + "";
         column = numberConversionMap.get(pos[1]);
         return column + row;
     }
@@ -254,7 +252,6 @@ public class chess {
                 }
                 board[moveToLocationRow][moveToLocationColumn] = board[validTestRow][validTestColumn];
                 board[validTestRow][validTestColumn] = 0;
-                System.out.println("Checking for promotion\nPiece type: " + pieceType + " test row " + validTestRow);
                 if (pieceType == 1 && moveToLocationRow == 0 || pieceType == 6 && moveToLocationRow == 7) {
                     System.out.println("Promote Pawn");
                     promotePawn(validTestBoth);
@@ -287,6 +284,7 @@ public class chess {
         // temporally moves the piece to check if the king is in check
 
         if (checkIfKingInCheck) {
+            System.out.println(ANSI_Red + "DEBUG: CHECKING IF THE KING IS IN CHECK...\nRun the method result: " + whiteKingInCheck() + "\nIs move valid a8 to a4? " + isMoveLegal("a8", whiteKingPosition, false) + ANSI_Reset);
             board[endLocation[0]][endLocation[1]] = pieceType;
             board[startLocation[0]][startLocation[1]] = 0;
             if (whiteTurn && whiteKingInCheck() || !whiteTurn && blackKingInCheck()) {
@@ -439,8 +437,8 @@ public class chess {
 
     private boolean whiteKingInCheck() {
         int[] testPos;
-        for (int i = 1; i < 8; i++) {
-            for (int j = 1; j < 8; j++) {
+        for (int i = 0; i < 8; i++) {
+            for (int j = 0; j < 8; j++) {
                 testPos = new int[]{i,j};
                 String stringTestPos = convertToString(testPos);
                 if (board[i][j] > 5 && board[i][j] < 12) {
@@ -458,8 +456,8 @@ public class chess {
 
     private boolean blackKingInCheck() {
         int[] testPos;
-        for (int i = 1; i < 8; i++) {
-            for (int j = 1; j < 8; j++) {
+        for (int i = 0; i < 8; i++) {
+            for (int j = 0; j < 8; j++) {
                 testPos = new int[]{i,j};
                 String stringTestPos = convertToString(testPos);
                 if (board[i][j] < 6 && board[i][j] > 0 || board[i][j] == 12) {
