@@ -284,7 +284,6 @@ public class chess {
         // temporally moves the piece to check if the king is in check
 
         if (checkIfKingInCheck) {
-            System.out.println(ANSI_Red + "DEBUG: CHECKING IF THE KING IS IN CHECK...\nRun the method result: " + whiteKingInCheck() + "\nIs move valid a8 to a4? " + isMoveLegal("a8", whiteKingPosition, false) + ANSI_Reset);
             board[endLocation[0]][endLocation[1]] = pieceType;
             board[startLocation[0]][startLocation[1]] = 0;
             if (whiteTurn && whiteKingInCheck() || !whiteTurn && blackKingInCheck()) {
@@ -461,8 +460,9 @@ public class chess {
                 testPos = new int[]{i,j};
                 String stringTestPos = convertToString(testPos);
                 if (board[i][j] < 6 && board[i][j] > 0 || board[i][j] == 12) {
-                    if (isMoveLegal(stringTestPos, whiteKingPosition, false)) {
+                    if (isMoveLegal(stringTestPos, blackKingPosition, false)) {
                         blackKingInCheck = true;
+                        System.out.println("The black king is in check! Row: " + i + ", Column: " + j);
                         return true;
                     }
 
