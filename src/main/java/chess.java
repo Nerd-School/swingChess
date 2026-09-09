@@ -37,8 +37,10 @@ public class chess {
     private int[][] board = new int[8][8];
 
     public final String ANSI_Reset = "\u001B[0m";
+    public final String ANSI_Black = "\u001B[90m";
     public final String ANSI_Red = "\u001B[31m";
-    public final String ANSI_Green = "\u001B[32m";
+    public static final String ANSI_Brown = "\u001b[38;2;139;69;19m";
+    public static final String ANSI_Tan = "\u001b[38;2;210;180;140m";
 
     JFrame frame = new JFrame();
 
@@ -77,16 +79,33 @@ public class chess {
     }
 
     public void printBoard() {
+        boolean squareIsLight;
         for (int i=0; i<ROW_COUNT; i++) {
             System.out.print(8-i + " ");
             for (int k=0; k<COLUMN_COUNT; k++) {
-                if (board[i][k] > 5 && board[i][k] != 12) {
-                    System.out.print(ANSI_Red + "[" + board[i][k] + "]" + ANSI_Reset);
-                } else if (board[i][k] > 0 && board[i][k] < 6 || board[i][k] == 12) {
-                    System.out.print(ANSI_Green + "[" + board[i][k] + "]" + ANSI_Reset);
+                squareIsLight = (i + k) % 2 == 0;
+                if (squareIsLight) {
+                    System.out.print(ANSI_Tan + "[");
                 } else {
-                    System.out.print(ANSI_Reset + "[" + board[i][k] + "]");
+                    System.out.print(ANSI_Brown + "[");
                 }
+                if (board[i][k] > 5 && board[i][k] != 12) {
+                    System.out.print(ANSI_Black + board[i][k] + ANSI_Reset);
+                } else if (board[i][k] > 0 && board[i][k] < 6 || board[i][k] == 12) {
+                    System.out.print(ANSI_Reset + board[i][k] + ANSI_Reset);
+                } else {
+                    if (squareIsLight) {
+                        System.out.print(ANSI_Tan + board[i][k] + ANSI_Reset);
+                    } else {
+                        System.out.print(ANSI_Brown + board[i][k] + ANSI_Reset);
+                    }
+                }
+                if (squareIsLight) {
+                    System.out.print(ANSI_Tan + "]");
+                } else {
+                    System.out.print(ANSI_Brown + "]");
+                }
+                System.out.print(ANSI_Reset);
             }
             // next line after 8 pieces placed
             System.out.println();
@@ -241,6 +260,7 @@ public class chess {
                     success = true;
                 } else {
                     System.out.println("Invalid location! Try again!");
+                    moveToLocation = scanner.next();
                 }
             } while (!success);
 
@@ -256,13 +276,30 @@ public class chess {
                     System.out.println("Promote Pawn");
                     promotePawn(validTestBoth);
                 }
+                if (!whiteTurn) {
+                    // check if white is in checkmate after black's turn
+                    whiteKingInCheck();
+                    parentSuccess = whiteInCheckmate();
+                    System.out.println("I just checked if white is in checkmate. It is " + parentSuccess + " that white is in checkmate.");
+                    System.out.println("Is the move e4 to king location valid? " + isMoveLegal("e4", whiteKingPosition, false));
+                } else {
+                    whiteKingInCheck();
+                }
+
                 whiteTurn = !whiteTurn;
+
             } else {
                 System.out.println("Illegal move! Try again!");
             }
 
             printBoard();
         } while (!parentSuccess);
+
+        if (whiteTurn) {
+            System.out.println("Black wins");
+        } else {
+            System.out.println("White wins");
+        }
     }
 
     public boolean isMoveLegal(String start, String end, boolean checkIfKingInCheck) {
@@ -284,16 +321,26 @@ public class chess {
         // temporally moves the piece to check if the king is in check
 
         if (checkIfKingInCheck) {
+            System.out.println(ANSI_Red + "DEBUG: isMoveLegal is checking is the king is in check after the move would be done");
+            if (pieceType == 12) {
+                whiteKingPosition =  convertToString(endLocation);
+            }
             board[endLocation[0]][endLocation[1]] = pieceType;
             board[startLocation[0]][startLocation[1]] = 0;
             if (whiteTurn && whiteKingInCheck() || !whiteTurn && blackKingInCheck()) {
                 board[startLocation[0]][startLocation[1]] = pieceType;
                 board[endLocation[0]][endLocation[1]] = endPieceType;
                 System.out.println("The king is in check");
+                if (pieceType == 12) {
+                    whiteKingPosition =  convertToString(startLocation);
+                }
                 return false;
             }
             board[startLocation[0]][startLocation[1]] = pieceType;
             board[endLocation[0]][endLocation[1]] = endPieceType;
+            if (pieceType == 12) {
+                whiteKingPosition =  convertToString(startLocation);
+            }
         }
 
 
@@ -436,6 +483,7 @@ public class chess {
 
     private boolean whiteKingInCheck() {
         int[] testPos;
+        System.out.println(ANSI_Red + "DEBUG: CHECKING IF THE WHITE KING IS IN CHECK" + ANSI_Reset);
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 8; j++) {
                 testPos = new int[]{i,j};
@@ -532,6 +580,47 @@ public class chess {
             }
         } while (!success);
     }
+
+    private boolean whiteInCheckmate() {
+        whiteTurn = true;
+        // first check if the king can move out of checkmate
+        if (whiteKingInCheck) {
+            int[] testPos;
+            for (int i = -1; i <= 1; i++) {
+                for (int j = -1; j <= 1; j++) {
+                    int[] intKingPos = convertToNumber(whiteKingPosition);
+                    testPos = new int[]{i + intKingPos[0], j +  intKingPos[1]};
+                    System.out.println("testing if the king can move from " + intKingPos[0] + ", " + intKingPos[1] + " to " + testPos[0] + ", " + testPos[1]);
+                    try {
+                        System.out.println(ANSI_Red + "DEBUG: Is move legal " + whiteKingPosition + " to " + convertToString(testPos) + "? " + isMoveLegal(whiteKingPosition, convertToString(testPos), true) + ANSI_Reset);
+                        if (isMoveLegal(whiteKingPosition, convertToString(testPos), true)) {
+                            System.out.println(ANSI_Red + "The king can move to " + testPos[0] + ", " + testPos[1] + ANSI_Reset);
+                            whiteTurn = false;
+                            whiteKingPosition = convertToString(intKingPos);
+                            return false;
+                        }
+                    } catch (Exception e) {
+                        if (!(e instanceof java.lang.ArrayIndexOutOfBoundsException)) {
+                            throw e;
+                        }
+                    }
+                }
+                System.out.println("loop");
+            }
+
+
+            // if all possible ways to get out of checkmate fail, return true which means your in checkmate
+            System.out.println(ANSI_Red + "DEBUG: returning true to white in checkmate" + ANSI_Reset);
+            whiteTurn = false;
+            return true;
+        } else  {
+            System.out.println(ANSI_Red + "DEBUG: returning false to white in checkmate because the variable whiteKingInCheck is false" +  ANSI_Reset);
+            whiteTurn = false;
+            return false;
+        }
+    }
+
+//    private boolean blackInCheckmate() {}
 
 }
 
