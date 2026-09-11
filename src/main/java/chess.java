@@ -2,6 +2,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.HashMap;
 import java.util.Scanner;
+import java.util.ArrayList;
 
 public class chess {
 
@@ -15,6 +16,18 @@ public class chess {
 
     String whiteKingPosition = "e1";
     String blackKingPosition = "e8";
+
+    String blackCheckingPiece;
+    String whiteCheckingPiece;
+
+    int blackCheckingPieceType;
+    int whiteCheckingPieceType;
+
+    int numberOfBlackCheckingPieces;
+    int numberOfWhiteCheckingPieces;
+
+    ArrayList<String> pathToBlackCheckingPieces = new ArrayList<>();
+    ArrayList<String> pathToWhiteCheckingPieces = new ArrayList<>();
 
     final int whitePawn = 1;
     final int whiteKnight = 2;
@@ -279,11 +292,15 @@ public class chess {
                 if (!whiteTurn) {
                     // check if white is in checkmate after black's turn
                     whiteKingInCheck();
+                    blackKingInCheck();
                     parentSuccess = whiteInCheckmate();
                     System.out.println("I just checked if white is in checkmate. It is " + parentSuccess + " that white is in checkmate.");
                     System.out.println("Is the move e4 to king location valid? " + isMoveLegal("e4", whiteKingPosition, false));
                 } else {
                     whiteKingInCheck();
+                    blackKingInCheck();
+                    parentSuccess = blackInCheckmate();
+                    System.out.println("I just checked if black is in checkmate. It is " + parentSuccess + " that black is in checkmate.");
                 }
 
                 whiteTurn = !whiteTurn;
@@ -302,7 +319,7 @@ public class chess {
         }
     }
 
-    public boolean isMoveLegal(String start, String end, boolean checkIfKingInCheck) {
+    public boolean isMoveLegal(String start, String end, boolean checkIfKingInCheck, boolean addCheckPath) {
         int[] startLocation = convertToNumber(start);
         int[] endLocation = convertToNumber(end);
         int pieceType;
@@ -321,7 +338,7 @@ public class chess {
         // temporally moves the piece to check if the king is in check
 
         if (checkIfKingInCheck) {
-            System.out.println(ANSI_Red + "DEBUG: isMoveLegal is checking is the king is in check after the move would be done");
+//            System.out.println(ANSI_Red + "DEBUG: isMoveLegal is checking is the king is in check after the move would be done");
             if (pieceType == 12) {
                 whiteKingPosition =  convertToString(endLocation);
             }
@@ -348,19 +365,23 @@ public class chess {
         if (pieceType == whitePawn || pieceType == blackPawn) {
             return(pawnMoveLegal(startLocation, endLocation, pieceType, endPieceType));
         } else if (pieceType == whiteKnight || pieceType == blackKnight) {
-            return(knightMoveLegal(startLocation, endLocation));
+            return(knightMoveLegal(startLocation, endLocation, addCheckPath));
         } else if (pieceType == whiteBishop || pieceType == blackBishop) {
-            return(bishopMoveLegal(startLocation, endLocation));
+            return(bishopMoveLegal(startLocation, endLocation, addCheckPath));
         } else if (pieceType == whiteRook || pieceType == blackRook) {
-            return(rookMoveLegal(startLocation, endLocation));
+            return(rookMoveLegal(startLocation, endLocation, addCheckPath));
         } else if (pieceType == whiteQueen || pieceType == blackQueen) {
-            return rookMoveLegal(startLocation, endLocation) || bishopMoveLegal(startLocation, endLocation);
+            return rookMoveLegal(startLocation, endLocation, addCheckPath) || bishopMoveLegal(startLocation, endLocation, addCheckPath);
         } else if (pieceType == blackKing || pieceType == whiteKing) {
             return kingMoveLegal(startLocation, endLocation);
         } else {
             // there is no piece here that is in the library of pieces
             return(false);
         }
+    }
+
+    public boolean isMoveLegal(String start, String end, boolean checkIfKingInCheck) {
+        return(isMoveLegal(start, end, checkIfKingInCheck, false));
     }
 
     private boolean pawnMoveLegal(int[] startLocation, int[] endLocation, int pawnType, int endPieceType) {
@@ -373,7 +394,7 @@ public class chess {
                 } else {
                     return false;
                 }
-            } else if (startLocation[0] - 1 == endLocation[0] && Math.abs(startLocation[1] - endLocation[1]) == 1) {
+            } else if (startLocation[0] - 1 == endLocation[0] && Math.abs(startLocation[1] - endLocation[1]) == 1 && endPieceType != 0) {
                 return true;
             } else {
                 return false;
@@ -397,16 +418,19 @@ public class chess {
         }
     }
 
-    private boolean knightMoveLegal(int[] startLocation, int[] endLocation) {
+    private boolean knightMoveLegal(int[] startLocation, int[] endLocation, boolean addCheckPath) {
         // knight logic
         if (Math.abs(startLocation[0] - endLocation[0]) == 1 && Math.abs(startLocation[1] - endLocation[1]) == 2 || Math.abs(startLocation[0] - endLocation[0]) == 2 && Math.abs(startLocation[1] - endLocation[1]) == 1) {
+            if (addCheckPath) {
+                pathToBlackCheckingPieces.add(convertToString(startLocation));
+            }
             return true;
         } else {
             return false;
         }
     }
 
-    private boolean bishopMoveLegal(int[] startLocation, int[] endLocation) {
+    private boolean bishopMoveLegal(int[] startLocation, int[] endLocation, boolean addCheckPath) {
         int rowMultiplier;
         int columnMultiplier;
 
@@ -429,12 +453,19 @@ public class chess {
         for (int i = 1; i < Math.abs(startLocation[0] - endLocation[0]); i++) {
             if ((board[startLocation[0] + (i*rowMultiplier)][startLocation[1]+(i*columnMultiplier)] != 0)) {
                 return false;
+            } else {
+                if (addCheckPath) {
+                    pathToBlackCheckingPieces.add(convertToString(startLocation));
+                }
             }
+        }
+        if (addCheckPath) {
+            pathToBlackCheckingPieces.add(convertToString(startLocation));
         }
         return true;
     }
 
-    private boolean rookMoveLegal(int[] startLocation, int[] endLocation) {
+    private boolean rookMoveLegal(int[] startLocation, int[] endLocation, boolean addCheckPath) {
         // rook logic
         if (startLocation[0] == endLocation[0]) {
             // the rook is moving horizontally staying on the same row
@@ -444,12 +475,20 @@ public class chess {
                 for (int i = startLocation[1]+1;  i < endLocation[1]; i++) {
                     if (board[startLocation[0]][i] != 0) {
                         return false;
+                    } else {
+                        if (addCheckPath) {
+                            pathToBlackCheckingPieces.add(convertToString(new int[]{startLocation[0], i}));
+                        }
                     }
                 }
             } else if (startLocation[1] > endLocation[1]) {
                 for (int i = startLocation[1]-1; i > endLocation[1]; i--) {
                     if (board[startLocation[0]][i] != 0) {
                         return false;
+                    } else {
+                        if (addCheckPath) {
+                            pathToBlackCheckingPieces.add(convertToString(new int[]{startLocation[0], i}));
+                        }
                     }
                 }
             }
@@ -461,12 +500,20 @@ public class chess {
                 for (int i = startLocation[0]+1;  i < endLocation[0]; i++) {
                     if (board[i][startLocation[1]] != 0) {
                         return false;
+                    } else {
+                        if (addCheckPath) {
+                            pathToBlackCheckingPieces.add(convertToString(new int[]{i, startLocation[1]}));
+                        }
                     }
                 }
             } else if (startLocation[0] > endLocation[0]) {
                 for (int i = startLocation[0]-1;  i > endLocation[0]; i--) {
                     if (board[i][startLocation[1]] != 0) {
                         return false;
+                    } else {
+                        if (addCheckPath) {
+                            pathToBlackCheckingPieces.add(convertToString(new int[]{i, startLocation[1]}));
+                        }
                     }
                 }
             }
@@ -474,7 +521,11 @@ public class chess {
             // the rook can only move straight up or down so if the starting and ending row or column doesn't match it isn't moving straight
             return false;
         }
+        if (addCheckPath) {
+            pathToBlackCheckingPieces.add(convertToString(startLocation));
+        }
         return true;
+
     }
 
     private boolean kingMoveLegal(int[] startLocation, int[] endLocation) {
@@ -484,21 +535,31 @@ public class chess {
     private boolean whiteKingInCheck() {
         int[] testPos;
         System.out.println(ANSI_Red + "DEBUG: CHECKING IF THE WHITE KING IS IN CHECK" + ANSI_Reset);
+        numberOfBlackCheckingPieces = 0;
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 8; j++) {
                 testPos = new int[]{i,j};
                 String stringTestPos = convertToString(testPos);
                 if (board[i][j] > 5 && board[i][j] < 12) {
-                    if (isMoveLegal(stringTestPos, whiteKingPosition, false)) {
-                        System.out.println("The white king is in check");
-                        whiteKingInCheck = true;
-                        return true;
+                    if (isMoveLegal(stringTestPos, whiteKingPosition, false, true)) {
+                        System.out.println("The white king is in check form " + stringTestPos);
+                        blackCheckingPiece = stringTestPos;
+                        blackCheckingPieceType = board[i][j];
+                        numberOfBlackCheckingPieces++;
                     }
                 }
             }
         }
-        whiteKingInCheck = false;
-        return false;
+        if (numberOfBlackCheckingPieces == 0) {
+            whiteKingInCheck = false;
+            return false;
+        } else if (numberOfBlackCheckingPieces == 1) {
+            whiteKingInCheck = true;
+            return true;
+        } else {
+            whiteKingInCheck = true;
+            return true;
+        }
     }
 
     private boolean blackKingInCheck() {
@@ -586,6 +647,8 @@ public class chess {
         // first check if the king can move out of checkmate
         if (whiteKingInCheck) {
             int[] testPos;
+
+            // this will check if the king can move to a location out of check
             for (int i = -1; i <= 1; i++) {
                 for (int j = -1; j <= 1; j++) {
                     int[] intKingPos = convertToNumber(whiteKingPosition);
@@ -608,6 +671,29 @@ public class chess {
                 System.out.println("loop");
             }
 
+            // if you are in double check you can't move another piece to get out
+            if (numberOfBlackCheckingPieces == 1) {
+                for (int i = 0; i < 8; i++) {
+                    for (int j = 0; j < 8; j++) {
+                        // finds a white piece
+                        if (board[i][j] < 6 && board[i][j] > 0) {
+//                            System.out.println(ANSI_Red + "DEBUG: checking if the piece from ");
+                            if (isMoveLegal(convertToString(new int[]{i, j}), blackCheckingPiece, false)) {
+                                whiteTurn = false;
+                                System.out.println("You can capture the attacking piece from the location of " + i + ", " + j);
+                                return false;
+                            }
+                            for (int k = 0; k < pathToBlackCheckingPieces.size(); k++) {
+                                if (isMoveLegal(convertToString(new int[]{i, j}), pathToBlackCheckingPieces.get(k), false)) {
+                                    System.out.println("White is not in checkmate because you can block the attack with the piece at " + convertToString(new int[]{i, j}));
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
 
             // if all possible ways to get out of checkmate fail, return true which means your in checkmate
             System.out.println(ANSI_Red + "DEBUG: returning true to white in checkmate" + ANSI_Reset);
@@ -620,7 +706,69 @@ public class chess {
         }
     }
 
-//    private boolean blackInCheckmate() {}
+    private boolean blackInCheckmate() {
+        whiteTurn = false;
+        // first check if the king can move out of checkmate
+        if (blackKingInCheck) {
+            int[] testPos;
+
+            // this will check if the king can move to a location out of check
+            for (int i = -1; i <= 1; i++) {
+                for (int j = -1; j <= 1; j++) {
+                    int[] intKingPos = convertToNumber(blackKingPosition);
+                    testPos = new int[]{i + intKingPos[0], j +  intKingPos[1]};
+                    System.out.println("testing if the black king can move from " + intKingPos[0] + ", " + intKingPos[1] + " to " + testPos[0] + ", " + testPos[1]);
+                    try {
+                        System.out.println(ANSI_Red + "DEBUG: Is move legal " + blackKingPosition + " to " + convertToString(testPos) + "? " + isMoveLegal(blackKingPosition, convertToString(testPos), true) + ANSI_Reset);
+                        if (isMoveLegal(blackKingPosition, convertToString(testPos), true)) {
+                            System.out.println(ANSI_Red + "The black king can move to " + testPos[0] + ", " + testPos[1] + ANSI_Reset);
+                            whiteTurn = false;
+                            whiteKingPosition = convertToString(intKingPos);
+                            return false;
+                        }
+                    } catch (Exception e) {
+                        if (!(e instanceof java.lang.ArrayIndexOutOfBoundsException)) {
+                            throw e;
+                        }
+                    }
+                }
+                System.out.println("loop");
+            }
+
+            // if you are in double check you can't move another piece to get out
+            if (numberOfWhiteCheckingPieces == 1) {
+                for (int i = 0; i < 8; i++) {
+                    for (int j = 0; j < 8; j++) {
+                        // finds a black piece
+                        if (board[i][j] < 6 && board[i][j] > 0) {
+//                            System.out.println(ANSI_Red + "DEBUG: checking if the piece from ");
+                            if (isMoveLegal(convertToString(new int[]{i, j}), whiteCheckingPiece, false)) {
+                                whiteTurn = true;
+                                System.out.println("You can capture the attacking piece from the location of " + i + ", " + j);
+                                return false;
+                            }
+                            for (int k = 0; k < pathToWhiteCheckingPieces.size(); k++) {
+                                if (isMoveLegal(convertToString(new int[]{i, j}), pathToWhiteCheckingPieces.get(k), false)) {
+                                    System.out.println("White is not in checkmate because you can block the attack with the piece at " + convertToString(new int[]{i, j}));
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+
+            // if all possible ways to get out of checkmate fail, return true which means your in checkmate
+            System.out.println(ANSI_Red + "DEBUG: returning true to black in checkmate" + ANSI_Reset);
+            whiteTurn = true;
+            return true;
+        } else  {
+            System.out.println(ANSI_Red + "DEBUG: returning false to black in checkmate because the variable blackKingInCheck is false" +  ANSI_Reset);
+            whiteTurn = true;
+            return false;
+        }
+    }
 
 }
 
