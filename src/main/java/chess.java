@@ -564,22 +564,32 @@ public class chess {
 
     private boolean blackKingInCheck() {
         int[] testPos;
+        System.out.println(ANSI_Red + "DEBUG: CHECKING IF THE Black KING IS IN CHECK" + ANSI_Reset);
+        numberOfWhiteCheckingPieces = 0;
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 8; j++) {
                 testPos = new int[]{i,j};
                 String stringTestPos = convertToString(testPos);
-                if (board[i][j] < 6 && board[i][j] > 0 || board[i][j] == 12) {
-                    if (isMoveLegal(stringTestPos, blackKingPosition, false)) {
-                        blackKingInCheck = true;
-                        System.out.println("The black king is in check! Row: " + i + ", Column: " + j);
-                        return true;
+                if (board[i][j] > 5 && board[i][j] < 12) {
+                    if (isMoveLegal(stringTestPos, blackKingPosition, false, true)) {
+                        System.out.println("The black king is in check form " + stringTestPos);
+                        whiteCheckingPiece = stringTestPos;
+                        whiteCheckingPieceType = board[i][j];
+                        numberOfWhiteCheckingPieces++;
                     }
-
                 }
             }
         }
-        blackKingInCheck = false;
-        return false;
+        if (numberOfWhiteCheckingPieces == 0) {
+            blackKingInCheck = false;
+            return false;
+        } else if (numberOfWhiteCheckingPieces == 1) {
+            blackKingInCheck = true;
+            return true;
+        } else {
+            blackKingInCheck = true;
+            return true;
+        }
     }
 
     private void setupScreen() {
