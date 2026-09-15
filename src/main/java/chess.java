@@ -11,24 +11,35 @@ public class chess {
     // true means white turn false means blacks turn
     boolean whiteTurn = true;
 
+    // these variables tell you if the king is in check
     boolean whiteKingInCheck = false;
     boolean blackKingInCheck = false;
 
+    // these variables will help with various rules that involve the king
     String whiteKingPosition = "e1";
     String blackKingPosition = "e8";
 
+    // this tells you the location of the piece that is putting the king in check
+    // blackCheckingPiece is a black piece putting the white king in check and the same for white
     String blackCheckingPiece;
     String whiteCheckingPiece;
 
+    // The piece type of the piece defined in the previous variable
     int blackCheckingPieceType;
     int whiteCheckingPieceType;
 
+    // this variable will tell you if you are in double check
+    // this is important because the only way to get out of double check is to move the king
+    // this will make it so I don't have to do some checks for checkmate in you are in double check
     int numberOfBlackCheckingPieces;
     int numberOfWhiteCheckingPieces;
 
+    // These are a full path from the king to the checking piece
+    // this will help with blocking check with another piece
     ArrayList<String> pathToBlackCheckingPieces = new ArrayList<>();
     ArrayList<String> pathToWhiteCheckingPieces = new ArrayList<>();
 
+    // this is a key of every piece and their corresponding number in the logic
     final int whitePawn = 1;
     final int whiteKnight = 2;
     final int whiteBishop = 3;
@@ -42,22 +53,58 @@ public class chess {
     final int blackQueen = 10;
     final int blackKing = 11;
 
+    // this hashmap helps convert numbers into their corresponding letter to help with the convert to string method
     HashMap<Integer, String> numberConversionMap =  new HashMap<>();
 
+    // this is the size of the board
     final static int ROW_COUNT = 8;
     final static int COLUMN_COUNT = 8;
 
-    private int[][] board = new int[8][8];
+    // creates the 2d array that will hold all the pieces
+    private int[][] board = new int[ROW_COUNT][COLUMN_COUNT];
 
+    // DEBUG START
+    // various colors used for printing
     public final String ANSI_Reset = "\u001B[0m";
     public final String ANSI_Black = "\u001B[90m";
     public final String ANSI_Red = "\u001B[31m";
     public static final String ANSI_Brown = "\u001b[38;2;139;69;19m";
     public static final String ANSI_Tan = "\u001b[38;2;210;180;140m";
 
+    HashMap<Integer, String> printConversionMap =  new HashMap<>();
+    // DEBUG END
+
     JFrame frame = new JFrame();
 
     Rectangle size;
+
+    public chess() {
+        // assigns values to the number conversion hashmap
+        numberConversionMap.put(1, "b");
+        numberConversionMap.put(2, "c");
+        numberConversionMap.put(3, "d");
+        numberConversionMap.put(4, "e");
+        numberConversionMap.put(0, "a");
+        numberConversionMap.put(5, "f");
+        numberConversionMap.put(6, "g");
+        numberConversionMap.put(7, "h");
+
+        //DEBUG START
+        printConversionMap.put(whitePawn, "P");
+        printConversionMap.put(whiteKnight, "N");
+        printConversionMap.put(whiteBishop, "B");
+        printConversionMap.put(whiteRook, "R");
+        printConversionMap.put(whiteQueen, "Q");
+        printConversionMap.put(whiteKing, "K");
+        printConversionMap.put(blackPawn, "P");
+        printConversionMap.put(blackKnight, "N");
+        printConversionMap.put(blackBishop, "B");
+        printConversionMap.put(blackRook, "R");
+        printConversionMap.put(blackQueen, "Q");
+        printConversionMap.put(blackKing, "K");
+
+        //DEBUG END
+    }
 
     static void main(String[] args) {
 
@@ -73,19 +120,13 @@ public class chess {
 
         game.setupScreen();
 
-        game.numberConversionMap.put(0, "a");
-        game.numberConversionMap.put(1, "b");
-        game.numberConversionMap.put(2, "c");
-        game.numberConversionMap.put(3, "d");
-        game.numberConversionMap.put(4, "e");
-        game.numberConversionMap.put(5, "f");
-        game.numberConversionMap.put(6, "g");
-        game.numberConversionMap.put(7, "h");
-
+        // runs the resetBoard method which resets the board to a starting position
         game.resetBoard();
 
+        // prints out a reset board
         game.printBoard();
 
+        // starts the game loop
         game.movePiece();
 
         System.exit(0);
@@ -103,9 +144,9 @@ public class chess {
                     System.out.print(ANSI_Brown + "[");
                 }
                 if (board[i][k] > 5 && board[i][k] != 12) {
-                    System.out.print(ANSI_Black + board[i][k] + ANSI_Reset);
+                    System.out.print(ANSI_Black + printConversionMap.get(board[i][k]) + ANSI_Reset);
                 } else if (board[i][k] > 0 && board[i][k] < 6 || board[i][k] == 12) {
-                    System.out.print(ANSI_Reset + board[i][k] + ANSI_Reset);
+                    System.out.print(ANSI_Reset + printConversionMap.get(board[i][k]) + ANSI_Reset);
                 } else {
                     if (squareIsLight) {
                         System.out.print(ANSI_Tan + board[i][k] + ANSI_Reset);
@@ -205,60 +246,71 @@ public class chess {
     }
 
     public void movePiece() {
+        // this variable runs the parent while loop that keeps the game running
         boolean parentSuccess = false;
         do {
+            // the loop starts by getting a starting location to move a piece from
             System.out.println("What piece would you like to move? ");
-            String movingPiece = scanner.next();
+            String movingPieceString = scanner.next();
 
+            // the variable success helps with various smaller loops throughout the program
             boolean success = false;
 
+
+
+            int[] movingPieceIntBoth;
+            int movingPieceIntRow;
+            int movingPieceIntColumn;
+
+            int movingPieceType = 0;
+
+            // runs some other checks to make sure that the location is valid
             do {
-                if (movingPiece.length() == 2) {
-                    success = true;
+                // makes some variables that will be used for various checks
+                movingPieceIntBoth = convertToNumber(movingPieceString);
+                movingPieceIntRow = movingPieceIntBoth[0];
+                movingPieceIntColumn = movingPieceIntBoth[1];
+
+                // this will check to make sure that the input string is 2 characters long.
+                // the input string should be in the format (letter)(number) ex. e4
+                if (movingPieceString.length() != 2) {
+                    System.out.println("Please enter a location in chess algebraic notation. ex. e4. Do NOT include spaces");
+                    movingPieceString = scanner.next();
                 }
-            } while (!success);
-
-            int[] validTestBoth = {0,0};
-            int validTestRow = 0;
-            int validTestColumn = 0;
-
-            int pieceType = 0;
-
-            success = false;
-            // checks once and more times if needed
-            do {
-                validTestBoth = convertToNumber(movingPiece);
-                validTestRow = validTestBoth[0];
-                validTestColumn = validTestBoth[1];
-                // try checks if the position is inside the bounds of the board
+                // try is a backup in case the location is out of bounds. ex. number greater than 8 or letter greater than h
                 try {
                     // if checks the content of the position (0 is blank and above 12 is invalid)
-                    if (board[validTestRow][validTestColumn] == 0 || board[validTestRow][validTestColumn] > 12) {
+                    if (board[movingPieceIntRow][movingPieceIntColumn] == 0 || board[movingPieceIntRow][movingPieceIntColumn] > 12) {
                         System.out.println("Invalid location! Try again!");
-                        movingPiece = scanner.next();
+                        movingPieceString = scanner.next();
                     } else {
-                        pieceType = board[validTestRow][validTestColumn];
+                        // sets the piece type variable to the piece type of the starting location
+                        movingPieceType = board[movingPieceIntRow][movingPieceIntColumn];
                     }
-                    // the try failed so the location is outside the bounds of the board
+
+                // the try failed so the location is outside the bounds of the board
                 } catch (Exception e) {
-                    System.out.println("Invalid location! Try again!");
-                    movingPiece = scanner.next();
+                    if (e instanceof java.lang.ArrayIndexOutOfBoundsException){
+                        System.out.println("Invalid location! Try again!");
+                        movingPieceString = scanner.next();
+                    } else {
+                        throw e;
+                    }
+                }
+
+                // this checks if you are moving your own piece or if you are trying to move someone else's
+                if (!whiteTurn && movingPieceType >= whitePawn && movingPieceType <= whiteQueen || !whiteTurn && movingPieceType == whiteKing) {
+                    System.out.println("It is black's move. Please enter the location of a black piece");
+                    movingPieceString = scanner.next();
+                } else if (whiteTurn && movingPieceType >= blackPawn && movingPieceType <= blackKing) {
+                    System.out.println("It is white's move. Please enter the location of a white piece");
+                    movingPieceString = scanner.next();
+
                 }
                 success = true;
-                if (!whiteTurn && pieceType > 0 && pieceType < 6 || !whiteTurn && pieceType == 12) {
-                    System.out.println("It is black's move. Please enter the location of a black piece");
-                    success = false;
-                    movingPiece = scanner.next();
-                } else if (whiteTurn && pieceType > 5 && pieceType < 12) {
-                    System.out.println("It is white's move. Please enter the location of a white piece");
-                    success = false;
-                    movingPiece = scanner.next();
-
-                }
-
             } while (!success);
 
-            pieceType = board[validTestRow][validTestColumn];
+            movingPieceType = board[movingPieceIntRow][movingPieceIntColumn];
 
             System.out.println("Where would you like to move that piece? ");
             String moveToLocation = scanner.next();
@@ -266,29 +318,27 @@ public class chess {
             int moveToLocationRow = moveToLocationArray[0];
             int moveToLocationColumn = moveToLocationArray[1];
 
-            success = false;
+            // in the if statement it checks if the move is legal
+            if (isMoveLegal(movingPieceString, moveToLocation, true)) {
 
-            do {
-                if (moveToLocation.length() == 2) {
-                    success = true;
-                } else {
-                    System.out.println("Invalid location! Try again!");
-                    moveToLocation = scanner.next();
-                }
-            } while (!success);
-
-            if (isMoveLegal(movingPiece, moveToLocation, true)) {
-                if (board[validTestRow][validTestColumn] == 12) {
+                // if the piece type is a king then I change the value of the variable holding the location of the kings to match
+                if (movingPieceType == whiteKing) {
                     whiteKingPosition = convertToString(moveToLocationArray);
-                } else if (board[validTestRow][validTestColumn] == 11) {
+                } else if (movingPieceType == blackKing) {
                     blackKingPosition = convertToString(moveToLocationArray);
                 }
-                board[moveToLocationRow][moveToLocationColumn] = board[validTestRow][validTestColumn];
-                board[validTestRow][validTestColumn] = 0;
-                if (pieceType == 1 && moveToLocationRow == 0 || pieceType == 6 && moveToLocationRow == 7) {
+
+                // moves the piece from the start location to the end
+                board[moveToLocationRow][moveToLocationColumn] = board[movingPieceIntRow][movingPieceIntColumn];
+                board[movingPieceIntRow][movingPieceIntColumn] = 0;
+
+                // checks if a pawn needs to be promoted
+                if (movingPieceType == whitePawn && moveToLocationRow == 0 || movingPieceType == blackPawn && moveToLocationRow == 7) {
                     System.out.println("Promote Pawn");
-                    promotePawn(validTestBoth);
+                    promotePawn(movingPieceIntBoth);
                 }
+
+                // runs some post move checks 
                 if (!whiteTurn) {
                     // check if white is in checkmate after black's turn
                     whiteKingInCheck();
